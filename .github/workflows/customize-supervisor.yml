@@ -89,9 +89,9 @@ jobs:
 
       - name: Commit changes (exclude workflows)
         run: |
-          git add ./supervisor/const.py ./Dockerfile
           # 排除工作流文件
           rm -rf .github/workflows
+          git add .
           git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
 
       - name: Push branch to origin
