@@ -1,4 +1,4 @@
-name: Customize Home Assistant Supervisor
+name: Customize Supervisor
 
 on:
   workflow_dispatch:
@@ -7,11 +7,20 @@ on:
         description: 'Tag to use (e.g., 2025.05.5)'
         required: true
         default: '2025.05.5'
-
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    outputs:
+      branch:
+        description: "The branch of customize"
+        value: ${{ jobs.customize.outputs.branch_name }}
 jobs:
   customize:
     runs-on: ubuntu-latest
-
+    outputs:
+      branch_name: ${{ steps.push.outputs.branch_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -95,5 +104,7 @@ jobs:
           git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
 
       - name: Push branch to origin
+        id: push
         run: |
           git push origin ${{ steps.branch_name.outputs.branch }}
+          echo "branch_name=${{ steps.branch_name.outputs.branch }}" >> $GITHUB_OUTPUT

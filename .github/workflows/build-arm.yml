@@ -7,6 +7,19 @@ on:
         description: 'Branch to use (e.g., ihost-2025.05.5)'
         required: true
         default: 'ihost-2025.05.5'
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to use (e.g., ihost-2025.05.5)'
+        required: true
+        type: string
+    secrets:
+      DOCKER_USER:
+        description: 'Docker username'
+        required: true
+      DOCKER_PASSWORD:
+        description: 'Docker password'
+        required: true
 
 jobs:
   deploy-docker:
