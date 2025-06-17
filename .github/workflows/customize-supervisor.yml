@@ -91,7 +91,7 @@ jobs:
         run: |
           git add ./supervisor/const.py ./Dockerfile
           # 排除工作流文件
-          git reset -- .github
+          rm -rf .github/workflows
           git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
 
       - name: Push branch to origin
