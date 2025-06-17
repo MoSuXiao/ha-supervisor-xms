@@ -54,7 +54,7 @@ jobs:
         run: |
           TAG=${{ github.event.inputs.tag }}
           BRANCH="ihost-$TAG"
-          git checkout -b $BRANCH upstream/$TAG
+          git checkout -b $BRANCH $TAG
 
       - name: Modify supervisor/const.py
         run: |
