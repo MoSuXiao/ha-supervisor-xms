@@ -17,6 +17,15 @@ jobs:
       tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}
     secrets: inherit
 
+  debug-msg:
+    needs: trigger-customize
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug message
+        run: |
+          echo "Tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
+          echo "Branch: ${{ needs.trigger-customize }}"
+
 
   trigger-build:
     needs: trigger-customize
