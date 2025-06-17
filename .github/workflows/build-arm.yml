@@ -27,18 +27,18 @@ jobs:
     steps:
       - name: Debug branch input
         run: |
-            echo "Received branch: ${{ github.event.inputs.branch }}"
-            echo "Received branch: ${{ toJson(github.event.inputs) }}"
+            echo "Received branch: ${{ inputs.branch }}"
+            echo "Received branch: ${{ toJson(inputs) }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.new_branch }}
+          ref: ${{ inputs.new_branch }}
 
       - name: Get tag
         id: tags
         run: |
-          tag_value=$(echo ${{ github.event.inputs.branch }} | sed 's/ihost-//')
+          tag_value=$(echo ${{ inputs.branch }} | sed 's/ihost-//')
           echo "tag=$tag_value" >> $GITHUB_OUTPUT
           echo "Current tag value is: $tag_value"
 
