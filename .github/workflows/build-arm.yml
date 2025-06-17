@@ -1,0 +1,218 @@
+name: Build armv7 Supervisor
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to use (e.g., ihost-2025.05.5)'
+        required: true
+        default: 'ihost-2025.05.5'
+
+jobs:
+  deploy-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.new_branch }}
+
+      - name: Get tag
+        id: tags
+        run: |
+          tag=$(echo ${{ github.event.inputs.branch }} | sed 's/ihost-//')
+          echo "tag" >> $GITHUB_OUTPUT
+
+      - name: Log in to docker hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push to dockerhub
+        id: build-docker
+        uses: docker/build-push-action@v6.17.0
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm/v7
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/armv7-base-python:3.13-alpine3.21
+            COSIGN_VERSION=2.4.0
+            BUILD_ARCH=armv7
+          outputs: |
+            type=image,name=docker.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }},push=true
+
+#  run_supervisor:
+#    runs-on: ubuntu-latest
+#    name: Run the Supervisor
+#    timeout-minutes: 60
+#    steps:
+#      - name: Checkout the repository
+#        uses: actions/checkout@v4.2.2
+#
+#      - name: Pull Supervisor
+#        run: |
+#          docker pull ghcr.io/home-assistant/amd64-hassio-supervisor:${{ needs.init.outputs.version }}
+#          docker tag ghcr.io/home-assistant/amd64-hassio-supervisor:${{ needs.init.outputs.version }} ghcr.io/home-assistant/amd64-hassio-supervisor:runner
+#
+#      - name: Create the Supervisor
+#        run: |
+#          mkdir -p /tmp/supervisor/data
+#          docker create --name hassio_supervisor \
+#            --privileged \
+#            --security-opt seccomp=unconfined \
+#            --security-opt apparmor=unconfined \
+#            -v /run/docker.sock:/run/docker.sock \
+#            -v /run/dbus:/run/dbus \
+#            -v /tmp/supervisor/data:/data \
+#            -v /etc/machine-id:/etc/machine-id:ro \
+#            -e SUPERVISOR_SHARE="/tmp/supervisor/data" \
+#            -e SUPERVISOR_NAME=hassio_supervisor \
+#            -e SUPERVISOR_DEV=1 \
+#            -e SUPERVISOR_MACHINE="qemux86-64" \
+#          ghcr.io/home-assistant/amd64-hassio-supervisor:runner
+#
+#      - name: Start the Supervisor
+#        run: docker start hassio_supervisor
+#
+#      - name: Wait for Supervisor to come up
+#        run: |
+#          SUPERVISOR=$(docker inspect --format='{{.NetworkSettings.IPAddress}}' hassio_supervisor)
+#          ping="error"
+#          while [ "$ping" != "ok" ]; do
+#            ping=$(curl -sSL "http://$SUPERVISOR/supervisor/ping" | jq -r '.result')
+#            sleep 5
+#          done
+#
+#      - name: Check the Supervisor
+#        run: |
+#          echo "Checking supervisor info"
+#          test=$(docker exec hassio_cli ha supervisor info --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          echo "Checking supervisor network info"
+#          test=$(docker exec hassio_cli ha network info --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Check the Store / Addon
+#        run: |
+#          echo "Install Core SSH Add-on"
+#          test=$(docker exec hassio_cli ha addons install core_ssh --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          # Make sure it actually installed
+#          test=$(docker exec hassio_cli ha addons info core_ssh --no-progress --raw-json | jq -r '.data.version')
+#          if [[ "$test" == "null" ]]; then
+#            exit 1
+#          fi
+#
+#          echo "Start Core SSH Add-on"
+#          test=$(docker exec hassio_cli ha addons start core_ssh --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          # Make sure its state is started
+#          test="$(docker exec hassio_cli ha addons info core_ssh --no-progress --raw-json | jq -r '.data.state')"
+#          if [ "$test" != "started" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Check the Supervisor code sign
+#        if: needs.init.outputs.publish == 'true'
+#        run: |
+#          echo "Enable Content-Trust"
+#          test=$(docker exec hassio_cli ha security options --content-trust=true --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          echo "Run supervisor health check"
+#          test=$(docker exec hassio_cli ha resolution healthcheck --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          echo "Check supervisor unhealthy"
+#          test=$(docker exec hassio_cli ha resolution info --no-progress --raw-json | jq -r '.data.unhealthy[]')
+#          if [ "$test" != "" ]; then
+#            exit 1
+#          fi
+#
+#          echo "Check supervisor supported"
+#          test=$(docker exec hassio_cli ha resolution info --no-progress --raw-json | jq -r '.data.unsupported[]')
+#          if [[ "$test" =~ source_mods ]]; then
+#            exit 1
+#          fi
+#
+#      - name: Create full backup
+#        id: backup
+#        run: |
+#          test=$(docker exec hassio_cli ha backups new --no-progress --raw-json)
+#          if [ "$(echo $test | jq -r '.result')" != "ok" ]; then
+#            exit 1
+#          fi
+#          echo "slug=$(echo $test | jq -r '.data.slug')" >> "$GITHUB_OUTPUT"
+#
+#      - name: Uninstall SSH add-on
+#        run: |
+#          test=$(docker exec hassio_cli ha addons uninstall core_ssh --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Restart supervisor
+#        run: |
+#          test=$(docker exec hassio_cli ha supervisor restart --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Wait for Supervisor to come up
+#        run: |
+#          SUPERVISOR=$(docker inspect --format='{{.NetworkSettings.IPAddress}}' hassio_supervisor)
+#          ping="error"
+#          while [ "$ping" != "ok" ]; do
+#            ping=$(curl -sSL "http://$SUPERVISOR/supervisor/ping" | jq -r '.result')
+#            sleep 5
+#          done
+#
+#      - name: Restore SSH add-on from backup
+#        run: |
+#          test=$(docker exec hassio_cli ha backups restore ${{ steps.backup.outputs.slug }} --addons core_ssh --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#          # Make sure it actually installed
+#          test=$(docker exec hassio_cli ha addons info core_ssh --no-progress --raw-json | jq -r '.data.version')
+#          if [[ "$test" == "null" ]]; then
+#            exit 1
+#          fi
+#
+#          # Make sure its state is started
+#          test="$(docker exec hassio_cli ha addons info core_ssh --no-progress --raw-json | jq -r '.data.state')"
+#          if [ "$test" != "started" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Restore SSL directory from backup
+#        run: |
+#          test=$(docker exec hassio_cli ha backups restore ${{ steps.backup.outputs.slug }} --folders ssl --no-progress --raw-json | jq -r '.result')
+#          if [ "$test" != "ok" ]; then
+#            exit 1
+#          fi
+#
+#      - name: Get supervisor logs on failiure
+#        if: ${{ cancelled() || failure() }}
+#        run: docker logs hassio_supervisor
