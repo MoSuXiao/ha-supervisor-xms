@@ -52,5 +52,36 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add dev.json
-          git commit -m "Update supervisor to ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
+          git commit -m "Update supervisor - dev to ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
+          git push
+
+  deploy-to-stable:
+    needs: deploy-to-dev
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v3
+        with:
+          repository: MoSuXiao/haos-version-xms
+          ref: main  # 目标分支
+          token: ${{ secrets.PAT }}  # 需要有写入权限的PAT
+
+      - name: Update dev.json
+        run: |
+          # 读取并更新JSON文件
+          echo "Updating supervisor version to ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
+          jq '.supervisor = "${{ github.event.inputs.tag || github.event.client_payload.tag }}"' stable.json > stable.tmp.json
+          mv stable.tmp.json stable.json
+
+          # 查看更新后的内容
+          cat stable.json
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add stable.json
+          git commit -m "Update supervisor - stable to ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
           git push
