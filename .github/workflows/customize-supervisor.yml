@@ -84,11 +84,16 @@ jobs:
           echo "      org.opencontainers.image.url=\"https://www.home-assistant.io/\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.version=\"$TAG\"" >> ./Dockerfile
 
-      - name: Commit changes
+      - name: Commit changes (exclude workflows)
         run: |
-          TAG=${{ github.event.inputs.tag }}
           git add ./supervisor/const.py ./Dockerfile
-          git commit -m "Customize for iHost with tag $TAG"
+          # 排除工作流文件
+          git reset -- .github/workflows
+          git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
+
+      - name: Push branch to origin
+        run: |
+          git push origin ${{ steps.branch_name.outputs.branch }}
 
       - name: Push branch to origin
         run: |
