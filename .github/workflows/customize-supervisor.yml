@@ -20,7 +20,7 @@ jobs:
   customize:
     runs-on: ubuntu-latest
     outputs:
-      branch_name: ${{ steps.push.outputs.branch_name }}
+      branch_name: ${{ steps.branch_name.outputs.branch }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -108,3 +108,7 @@ jobs:
         run: |
           git push origin ${{ steps.branch_name.outputs.branch }}
           echo "branch_name=${{ steps.branch_name.outputs.branch }}" >> $GITHUB_OUTPUT
+
+      - name: Debug branch input
+        run: |
+            echo "Received branch: ${{ steps.push.outputs.branch_name  }}"
