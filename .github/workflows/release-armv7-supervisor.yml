@@ -12,7 +12,7 @@ on:
 
 jobs:
   trigger-customize:
-    uses: ./.github/workflows/customize-supervisor.yml@main
+    uses: ./.github/workflows/customize-supervisor.yml
     with:
       tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}
     secrets: inherit
@@ -20,7 +20,7 @@ jobs:
 
   trigger-build:
     needs: trigger-customize
-    uses: ./.github/workflows/build-arm.yml@main
+    uses: ./.github/workflows/build-arm.yml
     with:
       branch: ${{ needs.trigger-customize.outputs.branch }}
     secrets: inherit
