@@ -28,7 +28,7 @@ jobs:
       - name: Debug branch input
         run: |
             echo "Received branch: ${{ github.event.inputs.branch }}"
-            echo "Received branch: ${{ github.event.inputs }}"
+            echo "Received branch: ${{ toJson(github.event.inputs) }}"
 
       - name: Checkout code
         uses: actions/checkout@v4

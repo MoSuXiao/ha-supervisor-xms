@@ -24,7 +24,8 @@ jobs:
       - name: Debug message
         run: |
           echo "Tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
-          echo "Branch: ${{ needs.trigger-customize }}"
+          #打印needs.trigger-customize.outputs对象
+          echo "needs.trigger-customize.outputs: ${{ toJson(needs.trigger-customize) }}"
 
 
   trigger-build:
