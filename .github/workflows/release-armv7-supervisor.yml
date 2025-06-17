@@ -17,42 +17,12 @@ jobs:
       tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}
     secrets: inherit
 
-  debug-msg:
-    needs: trigger-customize
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug message
-        run: |
-          echo "Tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}"
-          #打印needs.trigger-customize.outputs对象
-          echo "needs.trigger-customize.outputs: ${{ toJson(needs.trigger-customize) }}"
-
-
   trigger-build:
     needs: trigger-customize
     uses: ./.github/workflows/build-arm.yml
     with:
       branch: ${{ needs.trigger-customize.outputs.branch }}
     secrets: inherit
-
-
-#  approve-dev-deployment:
-#    needs: trigger-build
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Wait for approval
-#        id: approval
-#        uses: trstringer/manual-approval@v1
-#        with:
-#          secret: ${{ secrets.GITHUB_TOKEN }}
-#          approvers: MoSuXiao
-#          minimum-approvals: 1
-#          issue-title: 'Approve deployment to DEV: ${{ github.event.inputs.tag || github.event.client_payload.tag }}'
-#          issue-body: |
-#            Deployment details:
-#            - Tag: ${{ github.event.inputs.tag || github.event.client_payload.tag }}
-#            - Branch: ${{ needs.trigger-customize.outputs.branch }}
-#            - Build Artifacts: [docker.io/mosuxiao/armv7-hassio-supervisor:${{ github.event.inputs.tag || github.event.client_payload.tag }}] # 可根据实际情况添加链接
 
   deploy-to-dev:
     needs: trigger-build
