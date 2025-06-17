@@ -94,9 +94,3 @@ jobs:
       - name: Push branch to origin
         run: |
           git push origin ${{ steps.branch_name.outputs.branch }}
-
-      - name: Push branch to origin
-        run: |
-          TAG=${{ github.event.inputs.tag }}
-          BRANCH="ihost-$TAG"
-          git push origin $BRANCH
