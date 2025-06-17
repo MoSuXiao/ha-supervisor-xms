@@ -25,6 +25,10 @@ jobs:
   deploy-docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug branch input
+        run: |
+            echo "Received branch: ${{ github.event.inputs.branch }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
