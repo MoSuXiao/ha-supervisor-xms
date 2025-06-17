@@ -51,7 +51,7 @@ jobs:
       - name: Add & fetch upstream remote
         run: |
           git remote add upstream https://github.com/home-assistant/supervisor.git
-          git fetch upstream --tags
+          git fetch upstream tag ${{ github.event.inputs.tag }}
 
       - name: Create and checkout new branch
         run: |
