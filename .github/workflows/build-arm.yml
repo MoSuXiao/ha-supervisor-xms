@@ -122,7 +122,7 @@ jobs:
           fi
 
       - name: Check the Supervisor code sign
-        if: needs.init.outputs.publish == 'true'
+#        if: needs.init.outputs.publish == 'true'
         run: |
           echo "Enable Content-Trust"
           test=$(docker exec hassio_cli ha security options --content-trust=true --no-progress --raw-json | jq -r '.result')
