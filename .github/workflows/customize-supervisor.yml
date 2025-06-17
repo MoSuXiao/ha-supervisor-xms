@@ -32,11 +32,14 @@ jobs:
         id: branch_check
         continue-on-error: true
         run: |
-          git ls-remote --exit-code --heads origin ${{ steps.branch_name.outputs.branch }}
-          if [ $? -eq 0 ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
+          echo "Checking for branch ${{ steps.branch_name.outputs.branch }} in origin..."
+          RESULT=$(git ls-remote --heads origin ${{ steps.branch_name.outputs.branch }})
+          if [ -z "$RESULT" ]; then
+            echo "Branch does not exist"
             echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "Branch exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Fail if branch exists
@@ -88,7 +91,7 @@ jobs:
         run: |
           git add ./supervisor/const.py ./Dockerfile
           # 排除工作流文件
-          git reset -- .github/workflows
+          git reset -- .github
           git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
 
       - name: Push branch to origin
