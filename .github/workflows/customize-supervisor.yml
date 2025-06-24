@@ -83,7 +83,7 @@ jobs:
           echo "      io.hass.base.arch=\"armv7\" \\" >> ./Dockerfile
           echo "      io.hass.base.image=\"ghcr.io/home-assistant/armv7-base:3.21\" \\" >> ./Dockerfile
           echo "      io.hass.base.name=\"python\" \\" >> ./Dockerfile
-          echo "      io.hass.base.version=\"2025.05.0\" \\" >> ./Dockerfile
+          echo "      io.hass.base.version=\"2025.06.1\" \\" >> ./Dockerfile
           echo "      io.hass.type=\"supervisor\" \\" >> ./Dockerfile
           echo "      io.hass.version=\"$TAG\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.authors=\"The Home Assistant Authors\" \\" >> ./Dockerfile
