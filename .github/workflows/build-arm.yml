@@ -37,11 +37,12 @@ jobs:
           echo "tag=$tag_value" >> $GITHUB_OUTPUT
           echo "Current tag value is: $tag_value"
 
-      - name: Log in to docker hub
+      - name: Log in to GHCR
         uses: docker/login-action@v3.4.0
         with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ secrets.ACTOR }}
+          password: ${{ secrets.PAT }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -61,7 +62,7 @@ jobs:
             COSIGN_VERSION=2.4.0
             BUILD_ARCH=armv7
           outputs: |
-            type=docker,name=mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }},push=false
+            type=docker,name=ghcr.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }},push=false
 
 
       - name: Create the Supervisor
@@ -79,7 +80,7 @@ jobs:
             -e SUPERVISOR_NAME=hassio_supervisor \
             -e SUPERVISOR_DEV=1 \
             -e SUPERVISOR_MACHINE="qemux86-64" \
-          mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }}
+          ghcr.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }}
 
 
       - name: Start the Supervisor
@@ -226,10 +227,4 @@ jobs:
       - name: Push to Docker Hub
         if: success()
         run: |
-          docker tag mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }} \
-                     docker.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }}
-          docker tag mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }} \
-                     docker.io/mosuxiao/armv7-hassio-supervisor:latest
-
-          docker push docker.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }}
-          docker push docker.io/mosuxiao/armv7-hassio-supervisor:latest
+          docker push ghcr.io/mosuxiao/armv7-hassio-supervisor:${{ steps.tags.outputs.tag }}
