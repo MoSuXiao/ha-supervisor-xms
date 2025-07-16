@@ -1,4 +1,4 @@
-name: Customize Supervisor
+name: Supervisor Customize Branch
 
 on:
   workflow_dispatch:
@@ -24,6 +24,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: MoSuXiao/ha-supervisor-xms
+          ref: main
+          token: ${{ secrets.PAT }}
 
       - name: Set up Git credentials
         run: |
@@ -51,30 +55,40 @@ jobs:
             echo "exists=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Fail if branch exists
+      - name: Warn if branch exists
         if: steps.branch_check.outputs.exists == 'true'
         run: |
-          echo "Error: Branch ${{ steps.branch_name.outputs.branch }} already exists in the repository."
-          exit 1
+          echo "Warning: Branch ${{ steps.branch_name.outputs.branch }} already exists in the repository."
+          exit 0
 
       - name: Add & fetch upstream remote
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           git remote add upstream https://github.com/home-assistant/supervisor.git
           git fetch upstream tag ${{ github.event.inputs.tag }}
+          git fetch origin
 
       - name: Create and checkout new branch
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           TAG=${{ github.event.inputs.tag }}
           BRANCH="ihost-$TAG"
           git checkout -b $BRANCH $TAG
 
+      - name: Cherry pick Default audio commit
+        if: steps.branch_check.outputs.exists == 'false'
+        run: |
+          git cherry-pick 7a29f9ef6af1792a933218b0fdcc3156c270efa8
+
       - name: Modify supervisor/const.py
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           TAG=${{ github.event.inputs.tag }}
           sed -i "s|^SUPERVISOR_VERSION = \".*\"|SUPERVISOR_VERSION = \"${{ github.event.inputs.tag }}\"|" ./supervisor/const.py
           sed -i "s|^URL_HASSIO_VERSION = \".*\"|URL_HASSIO_VERSION = \"https://raw.githubusercontent.com/iHost-Open-Source-Project/haos-version/main/{channel}.json\"|" ./supervisor/const.py
 
       - name: Modify Dockerfile with labels
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           TAG=${{ github.event.inputs.tag }}
           DATE=$(date -u +"%Y-%m-%d %H:%M:%S%z")
@@ -91,24 +105,26 @@ jobs:
           echo "      org.opencontainers.image.description=\"Container-based system for managing Home Assistant Core installation\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.documentation=\"https://www.home-assistant.io/docs/\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.licenses=\"Apache License 2.0\" \\" >> ./Dockerfile
-          echo "      org.opencontainers.image.source=\"https://github.com/home-assistant/supervisor\" \\" >> ./Dockerfile
+          echo "      org.opencontainers.image.source=\"https://github.com/iHost-Open-Source-Project/ha-supervisor\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.title=\"Home Assistant Supervisor\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.url=\"https://www.home-assistant.io/\" \\" >> ./Dockerfile
           echo "      org.opencontainers.image.version=\"$TAG\"" >> ./Dockerfile
 
       - name: Commit changes (exclude workflows)
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           # 排除工作流文件
-          rm -rf .github/workflows
+          # rm -rf .github/workflows
           git add .
           git commit -m "Customize for iHost with tag ${{ github.event.inputs.tag }}"
 
       - name: Push branch to origin
+        if: steps.branch_check.outputs.exists == 'false'
         id: push
         run: |
           git push origin ${{ steps.branch_name.outputs.branch }}
-          echo "branch_name=${{ steps.branch_name.outputs.branch }}" >> $GITHUB_OUTPUT
 
-      - name: Debug branch input
+      - name: Output branch name
         run: |
-            echo "Received branch: ${{ steps.push.outputs.branch_name  }}"
+          echo "branch_name=${{ steps.branch_name.outputs.branch }}" >> $GITHUB_OUTPUT
+          echo "Received branch: ${{ steps.push.outputs.branch_name  }}"
